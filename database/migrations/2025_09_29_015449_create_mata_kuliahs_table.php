@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('kode_mk')->unique();
             $table->string('nama_mk');
             $table->integer('sks');
-            $table->foreignId('dosen_id')->constrained('dosens')->onDelete('cascade');
+            $table->foreignId('dosen_id')->nullable()->constrained('dosens')->onDelete('set null');
             $table->timestamps();
         });
     }

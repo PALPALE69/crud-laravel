@@ -11,20 +11,18 @@ class MataKuliahController extends Controller
 
     public function index(Request $request)
     {
-        $q        = $request->query('q');
-        $dosen_id = $request->query('dosen_id');
+        $q = $request->query('q');
         
         $items = MataKuliah::with('dosen')
-            ->when($q, fn($qr) => $qr->where('nama','like',"%{$q}%"))
-            ->when($dosen_id, fn($qr) => $qr->where('dosen_id',$dosen_id))
+            ->when($q, function($query) use ($q) {
+                $query->where('kode_mk', 'like', "%{$q}%")
+                      ->orWhere('nama_mk', 'like', "%{$q}%");
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        $dosens = Dosen::orderBy('nama')->get(['id','nama']);
-
-        return view('mata_kuliah.index', 
-    compact('items','q','dosen_id','dosens'));
+        return view('mata_kuliah.index', compact('items', 'q'));
     }
 
     public function create()
@@ -36,14 +34,14 @@ class MataKuliahController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nama'     => 'required|string|max:100',
+            'kode_mk'  => 'required|string|max:10|unique:mata_kuliahs,kode_mk',
+            'nama_mk'  => 'required|string|max:100',
             'sks'      => 'required|integer|min:1|max:6',
-            'dosen_id' => 'required|exists:dosens,id',
+            'dosen_id' => 'nullable|exists:dosens,id',
         ]);
 
         MataKuliah::create($data);
-        return redirect()->route('mata_kuliah.index')->with('ok','Mata 
-    kuliah berhasil dibuat.');
+        return redirect()->route('mata_kuliah.index')->with('success','Mata kuliah berhasil dibuat.');
     }
 
     public function  edit(MataKuliah $mata_kuliah)
@@ -55,18 +53,19 @@ class MataKuliahController extends Controller
     public function update(Request $request, MataKuliah $mata_kuliah)
     {
         $data = $request->validate([
-            'nama' => 'required|string|max:100',
-            'sks' => 'required|integer|min:1|max:6',
-            'dosen_id' => 'required|exists:dosens,id',
+            'kode_mk'  => 'required|string|max:10|unique:mata_kuliahs,kode_mk,'.$mata_kuliah->id,
+            'nama_mk'  => 'required|string|max:100',
+            'sks'      => 'required|integer|min:1|max:6',
+            'dosen_id' => 'nullable|exists:dosens,id',
         ]);
 
         $mata_kuliah->update($data);
-        return redirect()->route('mata_kuliah.index')->with('ok','Mata kuliah berhasil diubah.');
+        return redirect()->route('mata_kuliah.index')->with('success','Mata kuliah berhasil diubah.');
     }
 
     public function destroy(MataKuliah $mata_kuliah)
     {
         $mata_kuliah->delete();
-        return back()->with('ok','Mata kuliah berhasil dihapus.');
+        return back()->with('success','Mata kuliah berhasil dihapus.');
     }
 }

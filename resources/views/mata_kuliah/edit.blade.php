@@ -1,24 +1,121 @@
 @extends('layouts.app')
+@section('title', 'Edit Mata Kuliah')
 @section('content')
 <div class="container">
-    <h1>Edit Mata Kuliah</h1>
-    <form action="{{ route('mata_kuliah.update', $mata_kuliah->id) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div class="mb-3">
-            <label for="nama" class="form-label">Nama Mata Kuliah</label>
-            <input type="text" class="form-control" id="nama" name="nama" value="{{ $mata_kuliah->nama }}" required>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Edit Mata Kuliah
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form action="{{ route('mata_kuliah.update', $mata_kuliah->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="kode_mk" class="form-label">
+                                    <i class="fas fa-code me-1"></i>Kode Mata Kuliah <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control @error('kode_mk') is-invalid @enderror" 
+                                       id="kode_mk" 
+                                       name="kode_mk" 
+                                       value="{{ old('kode_mk', $mata_kuliah->kode_mk) }}"
+                                       placeholder="Contoh: IF101"
+                                       required>
+                                @error('kode_mk')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="sks" class="form-label">
+                                    <i class="fas fa-calculator me-1"></i>SKS <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select @error('sks') is-invalid @enderror" 
+                                        id="sks" 
+                                        name="sks" 
+                                        required>
+                                    <option value="">Pilih SKS</option>
+                                    @for($i = 1; $i <= 6; $i++)
+                                        <option value="{{ $i }}" {{ old('sks', $mata_kuliah->sks) == $i ? 'selected' : '' }}>
+                                            {{ $i }} SKS
+                                        </option>
+                                    @endfor
+                                </select>
+                                @error('sks')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nama_mk" class="form-label">
+                                <i class="fas fa-book me-1"></i>Nama Mata Kuliah <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control @error('nama_mk') is-invalid @enderror" 
+                                   id="nama_mk" 
+                                   name="nama_mk" 
+                                   value="{{ old('nama_mk', $mata_kuliah->nama_mk) }}"
+                                   placeholder="Masukkan nama mata kuliah"
+                                   required>
+                            @error('nama_mk')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="dosen_id" class="form-label">
+                                <i class="fas fa-chalkboard-teacher me-1"></i>Dosen Pengampu
+                            </label>
+                            <select class="form-select @error('dosen_id') is-invalid @enderror" 
+                                    id="dosen_id" 
+                                    name="dosen_id">
+                                <option value="">Pilih Dosen (Opsional)</option>
+                                @foreach($dosens as $dosen)
+                                    <option value="{{ $dosen->id }}" {{ old('dosen_id', $mata_kuliah->dosen_id) == $dosen->id ? 'selected' : '' }}>
+                                        {{ $dosen->nama }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if($mata_kuliah->dosen)
+                                <div class="form-text text-info">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Saat ini diampu oleh: <strong>{{ $mata_kuliah->dosen->nama }}</strong>
+                                </div>
+                            @endif
+                            @error('dosen_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i>Update
+                            </button>
+                            <a href="{{ route('mata_kuliah.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Kembali
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="kode" class="form-label">Kode</label>
-            <input type="text" class="form-control" id="kode" name="kode" value="{{ $mata_kuliah->kode }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="sks" class="form-label">SKS</label>
-            <input type="number" class="form-control" id="sks" name="sks" value="{{ $mata_kuliah->sks }}" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Update</button>
-        <a href="{{ route('mata_kuliah.index') }}" class="btn btn-secondary">Kembali</a>
-    </form>
+    </div>
 </div>
 @endsection

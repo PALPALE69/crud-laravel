@@ -32,14 +32,29 @@ public function index(Request $request){
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nip' => 'required|string|unique:dosens,nip',
+            'nip' => 'nullable|string|unique:dosens,nip',
             'nama' => 'required|string|max:100',
             'email' => 'required|email|unique:dosens,email',
-            'no_telepon' => 'required|string',
+            'no_telepon' => 'nullable|string',
+            'mata_kuliah' => 'nullable|array',
+            'mata_kuliah.*' => 'exists:mata_kuliahs,id'
         ]);
 
-        Dosen::create($data);
-        return redirect()->route('dosen.index')->with('ok','Dosen berhasil dibuat.');
+        try {
+            // Create dosen tanpa mata_kuliah field
+            $dosen = Dosen::create(collect($data)->except(['mata_kuliah'])->toArray());
+            
+            // Assign mata kuliah yang dipilih ke dosen ini
+            if ($request->has('mata_kuliah') && !empty($request->mata_kuliah)) {
+                \App\Models\MataKuliah::whereIn('id', $request->mata_kuliah)
+                    ->update(['dosen_id' => $dosen->id]);
+            }
+            
+            return redirect()->route('dosen.index')->with('success','Dosen berhasil dibuat.');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan dosen: ' . $e->getMessage())->withInput();
+        }
     }
 
     public function edit(Dosen $dosen)
@@ -50,14 +65,33 @@ public function index(Request $request){
     public function update(Request $request, Dosen $dosen)
     {
         $data = $request->validate([
-            'nip' => 'required|string|unique:dosens,nip,'.$dosen->id,
+            'nip' => 'nullable|string|unique:dosens,nip,'.$dosen->id,
             'nama' => 'required|string|max:100',
             'email' => 'required|email|unique:dosens,email,'.$dosen->id,
-            'no_telepon' => 'required|string',
+            'no_telepon' => 'nullable|string',
+            'mata_kuliah' => 'nullable|array',
+            'mata_kuliah.*' => 'exists:mata_kuliahs,id'
         ]);
 
-        $dosen->update($data);
-        return redirect()->route('dosen.index')->with('ok','Dosen berhasil diubah.');
+        // Update data dosen
+        $dosen->update(collect($data)->except(['mata_kuliah'])->toArray());
+        
+        try {
+            // Reset mata kuliah lama yang diajar oleh dosen ini
+            \App\Models\MataKuliah::where('dosen_id', $dosen->id)
+                ->update(['dosen_id' => null]);
+            
+            // Assign mata kuliah yang dipilih ke dosen ini
+            if ($request->has('mata_kuliah') && !empty($request->mata_kuliah)) {
+                \App\Models\MataKuliah::whereIn('id', $request->mata_kuliah)
+                    ->update(['dosen_id' => $dosen->id]);
+            }
+            
+            return redirect()->route('dosen.index')->with('success','Dosen berhasil diubah.');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat mengupdate mata kuliah: ' . $e->getMessage());
+        }
     }
 
 

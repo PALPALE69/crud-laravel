@@ -7,10 +7,22 @@ use Illuminate\Http\Request;
 
 class MahasiswaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $mahasiswa = Mahasiswa::paginate(10);
-        return view('mahasiswa.index', compact('mahasiswa'));
+        $q = $request->query('q');
+        $items = Mahasiswa::query()
+            ->when($q, function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('nama', 'like', "%{$q}%")
+                        ->orWhere('nim', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('mahasiswa.index', compact('items', 'q'));
     }
 
     public function create()
