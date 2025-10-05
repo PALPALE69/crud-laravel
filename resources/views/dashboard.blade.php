@@ -163,12 +163,15 @@
     const backgroundColors = colors.slice(0, chartData.length);
     const borderColors = backgroundColors.map(color => color.replace('0.8)', '1)'));
     
-    // Konfigurasi Chart (hanya jika ada data)
+    // Global variables
     let chart;
+    let ctx;
+    
+    // Konfigurasi Chart (hanya jika ada data)
     const chartElement = document.getElementById('chartMatkul');
     
     if (chartLabels.length > 0 && chartData.length > 0 && chartElement) {
-        const ctx = chartElement.getContext('2d');
+        ctx = chartElement.getContext('2d');
         chart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -269,20 +272,41 @@
     
     // Function untuk mengubah tipe chart
     function changeChartType(type) {
-        if (!chart || chartLabels.length === 0) {
-            console.log('Chart tidak tersedia atau tidak ada data');
+        console.log('Changing chart type to:', type);
+        
+        if (chartLabels.length === 0 || !chartLabels || !chartData) {
+            console.log('Tidak ada data untuk chart');
             return;
         }
+        
         // Update button states
         document.querySelectorAll('.btn-group .btn').forEach(btn => {
             btn.classList.remove('btn-primary');
             btn.classList.add('btn-outline-primary');
         });
-        document.getElementById(type + 'Btn').classList.remove('btn-outline-primary');
-        document.getElementById(type + 'Btn').classList.add('btn-primary');
         
-        // Destroy existing chart
-        chart.destroy();
+        const targetBtn = document.getElementById(type + 'Btn');
+        if (targetBtn) {
+            targetBtn.classList.remove('btn-outline-primary');
+            targetBtn.classList.add('btn-primary');
+        }
+        
+        // Destroy existing chart if it exists
+        if (chart) {
+            chart.destroy();
+            chart = null;
+        }
+        
+        // Get canvas context again (important after destroy)
+        const canvasElement = document.getElementById('chartMatkul');
+        if (!canvasElement) {
+            console.error('Canvas element not found');
+            return;
+        }
+        
+        // Clear canvas
+        ctx = canvasElement.getContext('2d');
+        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         
         // Create new chart with different type
         let newConfig = {
@@ -292,9 +316,9 @@
                 datasets: [{
                     label: 'Jumlah Mata Kuliah',
                     data: chartData,
-                    backgroundColor: type === 'pie' ? backgroundColors : backgroundColors.map(color => color + '80'),
-                    borderColor: borderColors,
-                    borderWidth: 2
+                    backgroundColor: type === 'pie' ? backgroundColors : backgroundColors.map(color => color + (type === 'line' ? '20' : '80')),
+                    borderColor: type === 'pie' ? '#fff' : borderColors,
+                    borderWidth: type === 'pie' ? 2 : 2
                 }]
             },
             options: {
@@ -307,7 +331,7 @@
                 plugins: {
                     legend: { 
                         display: type === 'pie',
-                        position: 'right',
+                        position: type === 'pie' ? 'right' : 'top',
                         labels: {
                             boxWidth: 15,
                             padding: 15,
@@ -321,6 +345,7 @@
                         borderColor: '#355c7d',
                         borderWidth: 2,
                         cornerRadius: 8,
+                        displayColors: true,
                         callbacks: {
                             title: function(context) {
                                 return 'Dosen: ' + context[0].label;
@@ -332,23 +357,36 @@
                                     return context.label + ': ' + context.parsed + ' MK (' + percentage + '%)';
                                 }
                                 return 'Mata Kuliah: ' + context.parsed.y + ' MK';
+                            },
+                            afterLabel: function(context) {
+                                if (type !== 'pie') {
+                                    const total = chartData.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed.y / total) * 100).toFixed(1);
+                                    return 'Persentase: ' + percentage + '%';
+                                }
                             }
                         }
                     }
+                },
+                onHover: (event, activeElements) => {
+                    event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
                 }
             }
         };
         
-        // Add scales for bar and line charts
+        // Add scales for bar and line charts only
         if (type !== 'pie') {
             newConfig.options.scales = {
                 x: {
                     ticks: { 
                         color: '#355c7d', 
                         font: { weight: 'bold', size: 11 },
-                        maxRotation: 45
+                        maxRotation: 45,
+                        minRotation: 0
                     },
-                    grid: { display: type === 'line' },
+                    grid: { 
+                        display: type === 'line'
+                    },
                     title: {
                         display: true,
                         text: 'Nama Dosen',
@@ -363,7 +401,10 @@
                         font: { weight: 'bold', size: 11 },
                         stepSize: 1
                     },
-                    grid: { color: 'rgba(53,92,125,0.1)' },
+                    grid: { 
+                        color: 'rgba(53,92,125,0.1)',
+                        lineWidth: 1
+                    },
                     title: {
                         display: true,
                         text: 'Jumlah Mata Kuliah',
@@ -374,7 +415,7 @@
             };
         }
         
-        // Special config for line chart
+        // Special configurations for each chart type
         if (type === 'line') {
             newConfig.data.datasets[0].fill = true;
             newConfig.data.datasets[0].backgroundColor = 'rgba(54, 162, 235, 0.1)';
@@ -384,15 +425,25 @@
             newConfig.data.datasets[0].pointRadius = 6;
             newConfig.data.datasets[0].pointHoverRadius = 8;
             newConfig.data.datasets[0].tension = 0.4;
-        }
-        
-        // Special config for bar chart
-        if (type === 'bar') {
+        } else if (type === 'bar') {
             newConfig.data.datasets[0].borderRadius = 8;
+            newConfig.data.datasets[0].borderSkipped = false;
             newConfig.data.datasets[0].maxBarThickness = 50;
+            newConfig.data.datasets[0].hoverBackgroundColor = backgroundColors.map(color => color + 'CC');
+            newConfig.data.datasets[0].hoverBorderWidth = 3;
+        } else if (type === 'pie') {
+            // Pie chart specific settings
+            newConfig.data.datasets[0].hoverOffset = 4;
+            newConfig.data.datasets[0].borderWidth = 1;
         }
         
-        chart = new Chart(ctx, newConfig);
+        // Create new chart instance
+        try {
+            chart = new Chart(ctx, newConfig);
+            console.log('Chart berhasil dibuat dengan tipe:', type);
+        } catch (error) {
+            console.error('Error membuat chart:', error);
+        }
     }
     
     // Set default button state (hanya jika ada data)
@@ -401,13 +452,18 @@
         document.getElementById('barBtn').classList.add('btn-primary');
         
         // Add loading animation
-        window.addEventListener('load', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             if (chart) {
                 setTimeout(() => {
                     chart.update('active');
-                }, 100);
+                }, 200);
             }
         });
     }
+    
+    // Debug information
+    console.log('Chart Labels:', chartLabels);
+    console.log('Chart Data:', chartData);
+    console.log('Chart initialized:', !!chart);
 </script>
 @endsection
