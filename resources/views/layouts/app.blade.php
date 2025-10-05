@@ -71,6 +71,37 @@
             font-family: 'Press Start 2P', cursive;
             font-size: 0.8rem;
         }
+        
+        /* Dashboard specific styles */
+        .dashboard-card {
+            transition: all 0.3s ease;
+            border: none !important;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15) !important;
+        }
+        
+        .chart-container {
+            position: relative;
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(53,92,125,0.1);
+        }
+        
+        .btn-group .btn {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.8rem;
+            font-weight: 600;
+        }
+        
+        .stats-legend {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+        }
     </style>
 </head>
 <body>
@@ -100,5 +131,9 @@
     <div class="retro-footer">
         &copy; {{ date('Y') }} CRUD by PALPALE69
     </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @yield('scripts')
 </body>
 </html>
